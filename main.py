@@ -93,12 +93,7 @@ def compute_perplexity(decoderLMmodel, data_loader, eval_iters=100):
     total_loss = 0
     for X, Y in data_loader:
         X, Y = X.to(device), Y.to(device)
-        output = decoderLMmodel(X, Y) # your model should be computing the cross entropy loss
-        # Handle both single loss return and (logits, loss) tuple return
-        if isinstance(output, tuple): # for decoder-only model
-            _, loss = output
-        else:
-            loss = output # for encoder-only and encoder-decoder model
+        loss = decoderLMmodel(X, Y) # your model should be computing the cross entropy loss
         losses.append(loss.item())
         total_loss += loss.item()
         if len(losses) >= eval_iters: break
@@ -108,6 +103,32 @@ def compute_perplexity(decoderLMmodel, data_loader, eval_iters=100):
     perplexity = torch.exp(mean_loss).item()  # Calculate perplexity as exp(mean loss)
 
     decoderLMmodel.train()
+    return perplexity
+
+# For decoder pre-training
+def compute_perplexity_external(model, data_loader, criterion, vocab_size, eval_iters=100):
+    """Compute perplexity using external CrossEntropyLoss"""
+    model.eval()
+    losses = []
+    with torch.no_grad():
+        for X, Y in data_loader:
+            X, Y = X.to(device), Y.to(device)
+            logits = model(X)
+            
+            # Language modeling loss: predict next token
+            shift_logits = logits[..., :-1, :].contiguous().view(-1, vocab_size)
+            shift_targets = Y[..., 1:].contiguous().view(-1)
+            loss = criterion(shift_logits, shift_targets)
+            
+            losses.append(loss.item())
+            if len(losses) >= eval_iters:
+                break
+    
+    losses = torch.tensor(losses)
+    mean_loss = losses.mean()
+    perplexity = torch.exp(mean_loss).item()
+    
+    model.train()
     return perplexity
 
 def main():
@@ -326,7 +347,7 @@ def main():
             dropout=0.1
         ).to(device)
         
-        optimizer = torch.optim.Adam(lm_model.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(lm_model.parameters(), lr=3e-3)
         
         print(f"Language Model has {sum(p.numel() for p in lm_model.parameters())} parameters")
         
