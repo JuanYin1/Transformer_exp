@@ -301,74 +301,50 @@ class SpeechClassifierDecoder(nn.Module):
         return logits, encoder_attention_maps
 
 
-#Part 2.2: Language Modeling Pretraining - decoder only model
-class DecoderOnlyLM(nn.Module):
-    """Decoder-only language model for pretraining"""
+#Part 2.2: Language Modeling Pretraining - using existing TransformerDecoder do the pre-training 
+class LanguageModelingDecoder(nn.Module):
+    """Language modeling wrapper using existing TransformerDecoder for pretraining"""
     def __init__(self, vocab_size, n_embed=64, n_head=2, n_layer=4, block_size=32, dropout=0.1):
         super().__init__()
         self.vocab_size = vocab_size
         self.block_size = block_size
         
-        # Token and position embeddings
+        # Input embeddings for language modeling
         self.token_embedding = nn.Embedding(vocab_size, n_embed)
         self.pos_embedding = nn.Embedding(block_size, n_embed)
         self.embed_dropout = nn.Dropout(dropout)
         
-        # Decoder blocks (with causal self-attention)
-        self.decoder_blocks = nn.ModuleList([
-            DecoderBlock(n_embed, n_head, dropout) for _ in range(n_layer)
-        ])
+        # Use existing TransformerDecoder
+        self.decoder = TransformerDecoder(n_embed, n_head, n_layer, dropout)
         
-        # Final layer norm and language modeling head
-        self.ln_f = nn.LayerNorm(n_embed)
+        # Language modeling head
         self.lm_head = nn.Linear(n_embed, vocab_size)
         
-    def forward(self, input_ids, targets=None):
+    def forward(self, input_ids):
         B, T = input_ids.size()
         assert T <= self.block_size
         
-        # Embeddings
+        # Input embeddings
         pos = torch.arange(0, T, dtype=torch.long, device=input_ids.device).unsqueeze(0)
         tok_emb = self.token_embedding(input_ids)
         pos_emb = self.pos_embedding(pos)
         x = self.embed_dropout(tok_emb + pos_emb)
         
-        # Create causal mask (lower triangular)
+        # Create causal mask for self-attention
         causal_mask = torch.tril(torch.ones(T, T, device=input_ids.device)).view(1, 1, T, T)
         
-        # Pass through decoder blocks
-        for block in self.decoder_blocks:
-            # For language modeling, we don't need encoder output
-            # We'll modify DecoderBlock to handle this case
-            x = self._decoder_block_lm(block, x, causal_mask)
+        # For language modeling, we don't have encoder output, so we use the input as "encoder_out"
+        # This is a bit of a hack, but it allows us to reuse TransformerDecoder
+        # The cross-attention will attend to the input tokens themselves
+        encoder_out = x  # Use input as encoder output
         
-        # Final layer norm and projection to vocabulary
-        x = self.ln_f(x)
-        logits = self.lm_head(x)
+        # Pass through decoder
+        decoder_out = self.decoder(x, encoder_out, src_mask=None, tgt_mask=causal_mask)
         
-        # Calculate loss if targets provided
-        loss = None
-        if targets is not None:
-            # Shift targets: predict next token
-            shift_logits = logits[..., :-1, :].contiguous()
-            shift_targets = targets[..., 1:].contiguous()
-            loss = F.cross_entropy(shift_logits.view(-1, self.vocab_size), shift_targets.view(-1))
-            
-        return logits, loss
-    
-    def _decoder_block_lm(self, block, x, mask):
-        """Use only self-attention part of decoder block for language modeling"""
-        # Self-attention with causal mask
-        attn_out, _ = block.self_attn(block.ln1(x), mask)
-        x = x + attn_out
+        # Language modeling head
+        logits = self.lm_head(decoder_out)
         
-        # Skip cross-attention (not needed for language modeling) since we are building the encoder-only model
-        
-        # Feed-forward
-        ffn_out = block.ffn(block.ln3(x))
-        x = x + ffn_out
-        
-        return x
+        return logits
 
 
 ######################################################### Part 3: Architectural Exploration ################################################ 
