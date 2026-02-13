@@ -55,3 +55,47 @@ Add/Norm include: residual connection, Layer Norm / Batch Norm
   | AliBi                | None   | Medium      | Excellent     | Long sequences, efficiency        |
   | RoPE                 | None   | Medium      | Excellent     | Long sequences, rotation          |
   | Relative Position    | Medium | High        | Good          | Local patterns                    |
+
+
+#### Detailed Analysis:
+```
+  1. Learnable Position Embeddings (Current Parts 1&2)
+
+  self.pos_embedding = nn.Embedding(block_size, n_embed)
+  Pros: Simple, can learn task-specific patterns
+  Cons: Fixed max length, lots of parameters, poor extrapolation
+
+  2. Sinusoidal Position Encoding (Original Transformer)
+
+  def sinusoidal_encoding(seq_len, d_model):
+      position = torch.arange(seq_len).unsqueeze(1)
+      div_term = torch.exp(torch.arange(0, d_model, 2) * -(math.log(10000.0) / d_model))
+      encoding = torch.zeros(seq_len, d_model)
+      encoding[:, 0::2] = torch.sin(position * div_term)
+      encoding[:, 1::2] = torch.cos(position * div_term)
+      return encoding
+  Pros: No parameters, good extrapolation, interpretable
+  Cons: Fixed pattern, not learnable
+
+  3. AliBi (Your Part 3 implementation)
+
+  Position as attention bias
+  alibi_bias = slopes * (i - j)  # Linear distance bias
+  Pros: No position parameters, excellent extrapolation, efficient
+  Cons: Linear assumption, limited expressiveness
+
+  4. RoPE (Rotary Position Embedding) (Not implemented, but very popular)
+
+  Rotates query and key vectors based on position.
+  Pros: No parameters, excellent for long sequences, used in GPT-J, LLaMA
+  Cons: More complex implementation
+
+  How to Choose the Right One?
+
+  For Your Assignment Context:
+
+  1. Short sequences (≤32 tokens): Learnable embeddings work fine
+  2. Need efficiency: AliBi (your Part 3) is best
+  3. Variable length: Sinusoidal or AliBi
+  4. Long sequences: AliBi or RoPE
+```
