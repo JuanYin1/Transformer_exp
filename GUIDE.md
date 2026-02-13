@@ -16,7 +16,7 @@
 
 ### encoder: 
 1. position embedding -> encoder block
-2. encoder block include: (softmax transfer score to attention weight which sums to 1) multihead self-attention with Add/Norm, FFNN wth Add/Norm, 
+2. encoder block include: (softmax transfer dot-product simularity score to attention weight which sums to 1) multihead self-attention with Add/Norm, FFNN wth Add/Norm, 
 
 ### decoder:
 1. position embedding -> decoder block -> projection layer -> softmax layer for probabilities
@@ -24,3 +24,34 @@
 
 Add/Norm include: residual connection, Layer Norm / Batch Norm
 
+
+### position encoding:
+
+#### Traditional approach:
+  - self.pos_embedding = nn.Embedding(self.block_size, self.n_embed) - learnable position embeddings
+  - pos_emb = self.pos_embedding(pos) - look up position embeddings
+  - x = tok_emb + pos_emb - add token + position embeddings
+
+#### AliBi approach:
+  - Only token embeddings (no positional embeddings with AliBi)
+  - x = self.embed_dropout(tok_emb) - NO position embeddings added
+  - Position info comes from AliBi biases in attention instead
+
+#### Summary of the Three Approaches:
+
+  | Approach                | Location            | How Position is Encoded                       |
+  |-------------------------|---------------------|-----------------------------------------------|
+  | Traditional (Parts 1&2) | tok_emb + pos_emb   | Learnable position embeddings added to tokens |
+  | AliBi (Part 3)          | scores + alibi_bias | Linear biases added to attention scores       |
+  | Local Window (Part 3)   | tok_emb + pos_emb   | Traditional + limited attention window        |
+
+
+#### Complete Positional Encoding Comparison
+
+  | Type                 | Memory | Computation | Extrapolation | Best Use Case                     |
+  |----------------------|--------|-------------|---------------|-----------------------------------|
+  | Learnable Embeddings | High   | Low         | Poor          | Fixed length sequences            |
+  | Sinusoidal           | Low    | Low         | Good          | Variable length, interpretability |
+  | AliBi                | None   | Medium      | Excellent     | Long sequences, efficiency        |
+  | RoPE                 | None   | Medium      | Excellent     | Long sequences, rotation          |
+  | Relative Position    | Medium | High        | Good          | Local patterns                    |
