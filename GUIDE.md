@@ -5,19 +5,28 @@
  - BERT: Encoder-only, uses bidirectional context, great for sentence classification. (with their ability to remember long-range dependencies, are well-suited for machine translation applications, where context and sequence memory are crucial.)
  - GPT: Decoder-only, uses causal (left-to-right) context, used for generation
  - seq2seq: Encoder-Decoder, neural network architecture designed to transform one sequence into another. It is widely used in tasks such as machine translation, text summarization, speech recognition, and image captioning.
- #### How Seq2Seq Works
-    The process involves two phases:
+ ### How Seq2Seq Works
+ The process involves two phases:
 
-    Encoding: The encoder processes the input sequence token by token, updating its internal state at each step. After processing the entire sequence, it outputs a context vector summarizing the input. (one vector only for the model)
+ Encoding: The encoder processes the input sequence token by token, updating its internal state at each step. After processing the entire sequence, it outputs a context vector summarizing the input. (one vector only for the model)
 
-    Decoding: The decoder uses the context vector to generate the output sequence token by token. During training, techniques like teacher forcing are used, where the actual target token is provided as input to the decoder instead of its previous prediction.
+ Decoding: The decoder uses the context vector to generate the output sequence token by token. During training, techniques like teacher forcing are used, where the actual target token is provided as input to the decoder instead of its previous prediction.
+ ### RNN and LSTM
+ Increasing the learning rate actually often leads to exploding gradients (where weights become huge and unstable), not fixing vanishing ones. The "Vanishing Gradient" problem means the gradient signal becomes virtually zero as it travels back through long sequences, so the model "forgets" early inputs.
+
+ Why LSTMs? LSTMs were explicitly invented to solve this. They use gating mechanisms (forget, input, and output gates) that create a "gradient superhighway," allowing error signals to flow backward through time without vanishing.
+ 
+ ### Self-attention
+ The attention matrix calculates a score for every query against every key, resulting in an $N \times N$ matrix
+ 
+ Impact on Long Docs in self-attention: While "time" is a factor, the bigger killer is Memory (RAM). Because the complexity is quadratic, doubling the sequence length quadruples the memory required. Processing a whole book (e.g., 50,000 tokens) would create an attention matrix with 2.5 billion entries, likely causing the GPU to run out of memory (OOM) immediately.
 
 
 # Cards
 | Key | Concept |
 | --- | --- |
 | Vanishing Gradient | Derivative of Sigmoid near 0 at extremes; weight updates stop. |
-| $PP$ / Perplexity Formula | $e^{H(p,q)}$ (exponential of cross-entropy). |
+| $PP$ / Perplexity Formula | $e^{H(p,q)}$ (exponential of cross-entropy). If a model has a cross-entropy loss of $L$, the perplexity is defined as $e^L$ (or $2^L$ depending on the log base).|
 | Causal Mask | Sets future token scores to $-\infty$ so $e^{-\infty} = 0$. |
 | RoPE | Rotary position; rotates $Q$ and $K$ based on index; similarity decays with distance. |
 | Gradient Checkpointing | Saves Memory, Costs Time (+33% compute) by re-calculating activations. |
