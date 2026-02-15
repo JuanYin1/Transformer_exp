@@ -15,7 +15,7 @@
  Increasing the learning rate actually often leads to exploding gradients (where weights become huge and unstable), not fixing vanishing ones. The "Vanishing Gradient" problem means the gradient signal becomes virtually zero as it travels back through long sequences, so the model "forgets" early inputs.
 
  Why LSTMs? LSTMs were explicitly invented to solve this. They use gating mechanisms (forget, input, and output gates) that create a "gradient superhighway," allowing error signals to flow backward through time without vanishing.
- 
+
  ### Self-attention
  The attention matrix calculates a score for every query against every key, resulting in an $N \times N$ matrix
  
@@ -275,3 +275,13 @@ Input → Transformer Layers → Language Model Head → Logits
       print(f"{method.upper()}: {decoded}")
 
 ```
+
+
+# Modern Model vs Standard model
+|Component | Old School (GPT-3) | Modern (LLaMA 3) | Why the Change? | 
+| ----- | ----- | ----- | ----- |
+| Positioning | Learned Absolute | RoPE (Rotary) | Better handling of long context and relative word distances.
+| Activation | GeLU | SwiGLU | Better performance per compute bit; smarter neurons.
+| Attention | Multi-Head (MHA) | Grouped-Query (GQA) | Drastically lowers memory usage (VRAM) to allow for 100k+ token context windows.
+| Norm | Post-LayerNorm | Pre-RMSNorm | Prevents training crashes; more stable scaling to huge sizes.
+| Structure | Dense (All neurons fire) | MoE (Sparse) | Decouples model size from inference speed (Smarter + Faster).
