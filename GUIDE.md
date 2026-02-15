@@ -1,3 +1,33 @@
+# Model type
+ - Skip-gram Model: we predict the surrounding context words given the current center word. Used in Word2Vec, skip-gram models predict surrounding words given a target word. They are effective for capturing semantic relationships between words.
+ - N-gram Model: Predicting the center word from context is called CBOW (Continuous Bag of Words).
+ - Neural networks based language models: RNN / LSTM / GRUs / seq2seq
+ - BERT: Encoder-only, uses bidirectional context, great for sentence classification. (with their ability to remember long-range dependencies, are well-suited for machine translation applications, where context and sequence memory are crucial.)
+ - GPT: Decoder-only, uses causal (left-to-right) context, used for generation
+ - seq2seq: Encoder-Decoder, neural network architecture designed to transform one sequence into another. It is widely used in tasks such as machine translation, text summarization, speech recognition, and image captioning.
+ #### How Seq2Seq Works
+    The process involves two phases:
+
+    Encoding: The encoder processes the input sequence token by token, updating its internal state at each step. After processing the entire sequence, it outputs a context vector summarizing the input. (one vector only for the model)
+
+    Decoding: The decoder uses the context vector to generate the output sequence token by token. During training, techniques like teacher forcing are used, where the actual target token is provided as input to the decoder instead of its previous prediction.
+
+
+# Cards
+| Key | Concept |
+| --- | --- |
+| Vanishing Gradient | Derivative of Sigmoid near 0 at extremes; weight updates stop. |
+| $PP$ / Perplexity Formula | $e^{H(p,q)}$ (exponential of cross-entropy). |
+| Causal Mask | Sets future token scores to $-\infty$ so $e^{-\infty} = 0$. |
+| RoPE | Rotary position; rotates $Q$ and $K$ based on index; similarity decays with distance. |
+| Gradient Checkpointing | Saves Memory, Costs Time (+33% compute) by re-calculating activations. |
+| BPE Merging | Iteratively merges the most frequent adjacent pair of tokens. |
+| Teacher Forcing | Feeding the ground-truth token as the next input during training. |
+| Logit Temperature | $T < 1$ (Deterministic/Sharp), $T > 1$ (Diverse/Flat). |
+
+
+
+
 
 # Concept table
 | Module | Primary Topic | Core Concepts | Model Architectures | Training and Evaluation Methods | Mathematical Components | Source |
