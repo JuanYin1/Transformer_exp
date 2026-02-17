@@ -168,139 +168,6 @@ class SpeechClassifier(nn.Module):
 
 
 ######################################################### Part 2: Decoder Implementation #########################################################
-# Self-Attention → Cross-Attention → Feed-Forward with residual connections
-# cross-attention is used to attend to the encoder's output for decoder
-class CrossAttention(nn.Module):
-    def __init__(self, n_embed, n_head, dropout=0.1):
-        super().__init__()
-        assert n_embed % n_head == 0
-        
-        self.n_embed = n_embed
-        self.n_head = n_head
-        self.head_dim = n_embed // n_head
-        self.dropout = dropout
-        
-        self.q_proj = nn.Linear(n_embed, n_embed, bias=False)
-        self.k_proj = nn.Linear(n_embed, n_embed, bias=False)
-        self.v_proj = nn.Linear(n_embed, n_embed, bias=False)
-        self.out_proj = nn.Linear(n_embed, n_embed)
-        
-        self.attn_dropout = nn.Dropout(dropout)
-        self.proj_dropout = nn.Dropout(dropout)
-        self.scale = 1.0 / math.sqrt(self.head_dim)
-        
-    def forward(self, x, encoder_out, src_mask=None, tgt_mask=None):
-        B_tgt, T_tgt, C_tgt = x.size()
-        B_src, T_src, C_src = encoder_out.size()
-        
-        q = self.q_proj(x).view(B_tgt, T_tgt, self.n_head, self.head_dim).transpose(1, 2)
-        k = self.k_proj(encoder_out).view(B_src, T_src, self.n_head, self.head_dim).transpose(1, 2)
-        v = self.v_proj(encoder_out).view(B_src, T_src, self.n_head, self.head_dim).transpose(1, 2)
-        
-        scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
-        
-        if src_mask is not None:
-            scores = scores.masked_fill(src_mask == 0, float('-inf'))
-            
-        attn_weights = F.softmax(scores, dim=-1)
-        attn_weights = self.attn_dropout(attn_weights)
-        
-        out = torch.matmul(attn_weights, v)
-        out = out.transpose(1, 2).contiguous().view(B_tgt, T_tgt, C_tgt)
-        out = self.proj_dropout(self.out_proj(out))
-        
-        return out, attn_weights
-
-
-# Decoder implementation 
-class DecoderBlock(nn.Module):
-    def __init__(self,n_embed, n_head, dropout=0.1):
-        super().__init__()
-        self.self_attn = MultiHeadAttention(n_embed, n_head, dropout)
-        self.cross_attn = CrossAttention(n_embed, n_head, dropout)
-        self.ffn = FeedForward(n_embed, dropout)
-        self.ln1 = nn.LayerNorm(n_embed)
-        self.ln2 = nn.LayerNorm(n_embed)
-        self.ln3 = nn.LayerNorm(n_embed)
-
-    def forward(self, x, encoder_out, src_mask=None, tgt_mask=None):
-        # Self-attention with residual connection and layer norm
-        attn_out, _ = self.self_attn(self.ln1(x), tgt_mask)
-        x = x + attn_out
-        
-        # Cross-attention with residual connection and layer norm  
-        cross_attn_out, _ = self.cross_attn(self.ln2(x), encoder_out, src_mask, tgt_mask)
-        x = x + cross_attn_out
-        
-        # Feed-forward with residual connection and layer norm
-        ffn_out = self.ffn(self.ln3(x))
-        x = x + ffn_out
-        
-        return x
-
-class TransformerDecoder(nn.Module):
-    def __init__(self, n_embed=64, n_head=2, n_layer=4, dropout=0.1):
-        super().__init__()
-        self.decoder_blocks = nn.ModuleList([
-            DecoderBlock(n_embed, n_head, dropout) for _ in range(n_layer)
-        ])
-        self.ln = nn.LayerNorm(n_embed)
-
-    def forward(self, x, encoder_out, src_mask=None, tgt_mask=None):
-        for block in self.decoder_blocks:
-            x = block(x, encoder_out, src_mask, tgt_mask)
-        return self.ln(x)
-
-class OutputHead(nn.Module):
-    def __init__(self, n_embed=64, n_output=3):
-        super().__init__()
-        self.linear = nn.Linear(n_embed, n_output)
-    def forward(self, x):
-        return torch.log_softmax(self.linear(x), dim=-1)
-
-
-class SpeechClassifierDecoder(nn.Module):
-    def __init__(self, vocab_size, n_embed=64, n_head=2, n_layer=4, block_size=32, n_hidden=100, n_output=3, dropout=0.1):
-        super().__init__()
-        self.encoder = TransformerEncoder(vocab_size, n_embed, n_layer, n_head, block_size)
-        self.decoder = TransformerDecoder(n_embed, n_head, n_layer, dropout)
-        
-        # Classification head with hidden layer
-        self.classifier = nn.Sequential(
-            nn.Linear(n_embed, n_hidden),  # 64 -> 100
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(n_hidden, n_output)  # 100 -> 3
-        )
-        
-        # Decoder embeddings
-        self.token_embedding = nn.Embedding(vocab_size, n_embed)
-        self.pos_embedding = nn.Embedding(block_size, n_embed)
-        self.embed_dropout = nn.Dropout(dropout)
-        
-    def forward(self, input_ids):
-        # Encode the input
-        encoder_out, encoder_attention_maps = self.encoder(input_ids)
-        
-        # Use the input as "target" for the decoder (teacher forcing style)
-        # In a real seq2seq task, this would be different
-        B, T = input_ids.size()
-        pos = torch.arange(0, T, dtype=torch.long, device=input_ids.device).unsqueeze(0)
-        tok_emb = self.token_embedding(input_ids)
-        pos_emb = self.pos_embedding(pos)
-        tgt_embedded = self.embed_dropout(tok_emb + pos_emb)
-        
-        # Decode
-        decoder_out = self.decoder(tgt_embedded, encoder_out)
-        
-        # Mean pooling and classification
-        pooled = decoder_out.mean(dim=1)
-        logits = self.classifier(pooled)
-        
-        # Return format compatible with main.py: (logits, attention_maps)
-        return logits, encoder_attention_maps
-
-
 #Part 2.2: Language Modeling Pretraining - Pure Decoder-Only Architecture (GPT-like)
 class DecoderOnlyBlock(nn.Module):
     """Pure decoder-only block with only causal self-attention (no cross-attention)"""
@@ -763,3 +630,199 @@ class EnhancedLanguageModelingDecoder(nn.Module):
         return logits
 
 
+# import math
+# import inspect
+# from dataclasses import dataclass
+
+# import torch
+# import torch.nn as nn
+# from torch.nn import functional as F
+# from dataclasses import dataclass
+# from typing import Optional
+
+# # @dataclass
+# # class TransformerConfig:
+# #     # Model architecture
+# #     vocab_size: int = 10000
+# #     n_embed: int = 64
+# #     n_layer: int = 4
+# #     n_head: int = 2
+# #     max_seq_len: int = 32
+# #     ff_hidden_dim: int = 100
+
+# #     # Training hyperparameters
+# #     dropout: float = 0.1
+# #     learning_rate: float = 0.001
+# #     batch_size: int = 16
+# #     n_epochs: int = 15
+
+# #     # Task-specific
+# #     n_classes: int = 3  # For classification
+
+# #     # Optional advanced configs
+# #     use_bias: bool = False
+# #     layer_norm_eps: float = 1e-5
+# #     init_std: float = 0.02
+
+#     def __post_init__(self):
+#         # Validate configuration
+#         assert self.n_embed % self.n_head == 0, f"n_embed ({self.n_embed}) must be divisible by n_head ({self.n_head})"
+#         assert self.vocab_size > 0, "vocab_size must be positive"
+#         assert self.max_seq_len > 0, "max_seq_len must be positive"
+
+# # Part 1.1: Transformer Encoder Implementation
+# # 1. Multi-Head Attention Layer with dropout, softmax, layer normalization, and residual connection
+# class MultiHeadAttention(nn.Module):
+#     def __init__(self, config: TransformerConfig):
+#         super().__init__()
+#         self.config = config
+#         self.n_head = config.n_head
+#         self.n_embed = config.n_embed
+#         self.head_dim = config.n_embed // config.n_head
+
+#         # Q, K, V projections
+#         self.q_proj = nn.Linear(config.n_embed, config.n_embed, bias=config.use_bias)
+#         self.k_proj = nn.Linear(config.n_embed, config.n_embed, bias=config.use_bias)
+#         self.v_proj = nn.Linear(config.n_embed, config.n_embed, bias=config.use_bias)
+#         self.out_proj = nn.Linear(config.n_embed, config.n_embed, bias=config.use_bias)
+
+#         # Dropout layers
+#         self.attn_dropout = nn.Dropout(config.dropout)
+#         self.proj_dropout = nn.Dropout(config.dropout)
+#         self.scale = 1.0 / math.sqrt(self.head_dim)
+
+#     def forward(self, x, mask=None):
+#         B, T, C = x.size()
+
+#         q = self.q_proj(x).view(B, T, self.n_head, self.head_dim).transpose(1, 2)
+#         k = self.k_proj(x).view(B, T, self.n_head, self.head_dim).transpose(1, 2)
+#         v = self.v_proj(x).view(B, T, self.n_head, self.head_dim).transpose(1, 2)
+
+#         scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
+
+#         if mask is not None:
+#             scores = scores.masked_fill(mask == 0, float('-inf'))
+
+#         attn_weights = F.softmax(scores, dim=-1)
+#         attn_weights = self.attn_dropout(attn_weights)
+
+#         out = torch.matmul(attn_weights, v)
+#         out = out.transpose(1, 2).contiguous().view(B, T, C)
+#         out = self.proj_dropout(self.out_proj(out))
+
+#         return out, attn_weights
+
+# # 2. Feed-Forward Network Layer with dropout, softmax, layer normalization, and residual connection
+# class FeedForward(nn.Module):
+#     def __init__(self, config: TransformerConfig):
+#         super().__init__()
+#         self.net = nn.Sequential(
+#             nn.Linear(config.n_embed, config.ff_hidden_dim),
+#             nn.ReLU(),
+#             nn.Dropout(config.dropout),
+#             nn.Linear(config.ff_hidden_dim, config.n_embed),
+#             nn.Dropout(config.dropout)
+#         )
+
+#     def forward(self, x):
+#         return self.net(x)
+
+# # 3. Transformer former block
+# class TransformerBlock(nn.Module):
+#     def __init__(self, config: TransformerConfig):
+#         super().__init__()
+#         self.attn = MultiHeadAttention(config)
+#         self.ffn = FeedForward(config)
+#         self.ln1 = nn.LayerNorm(config.n_embed, eps=config.layer_norm_eps)
+#         self.ln2 = nn.LayerNorm(config.n_embed, eps=config.layer_norm_eps)
+#         self.dropout1 = nn.Dropout(config.dropout)
+#         self.dropout2 = nn.Dropout(config.dropout)
+
+#     def forward(self, x, mask=None):
+#         attn_out, attn_weights = self.attn(self.ln1(x), mask)
+#         x = x + self.dropout1(attn_out)
+
+#         ffn_out = self.ffn(self.ln2(x))
+#         x = x + self.dropout2(ffn_out)
+
+#         return x, attn_weights
+
+# # 4. Encoder : with embedding, dropout, positional encoding, transformer blocks, and layer normalization
+# class TransformerEncoder(nn.Module):
+#     def __init__(self, config: TransformerConfig):
+#         super().__init__()
+#         self.config = config
+#         # encoder with embedding, dropout, and positional encoding
+#         self.token_embedding = nn.Embedding(config.vocab_size, config.n_embed)
+#         self.pos_embedding = nn.Embedding(config.max_seq_len, config.n_embed)
+#         self.embed_dropout = nn.Dropout(config.dropout)
+
+#         self.blocks = nn.ModuleList([
+#             TransformerBlock(config) for _ in range(config.n_layer)
+#         ])
+
+#         self.ln_f = nn.LayerNorm(config.n_embed, eps=config.layer_norm_eps)
+#         self.apply(self._init_weights)
+
+#     # can config the weights if needed !!!!!
+#     def _init_weights(self, module):
+#         if isinstance(module, nn.Linear):
+#             torch.nn.init.normal_(module.weight, mean=0.0, std=self.config.init_std)
+#             if module.bias is not None:
+#                 torch.nn.init.zeros_(module.bias)
+#         elif isinstance(module, nn.Embedding):
+#             torch.nn.init.normal_(module.weight, mean=0.0, std=self.config.init_std)
+#         elif isinstance(module, nn.LayerNorm):
+#             torch.nn.init.zeros_(module.bias)
+#             torch.nn.init.ones_(module.weight)
+    
+#     def forward(self, input_ids):
+#         B, T = input_ids.size()
+#         assert T <= self.config.max_seq_len
+
+#         pos = torch.arange(0, T, dtype=torch.long, device=input_ids.device).unsqueeze(0)
+
+#         tok_emb = self.token_embedding(input_ids)
+#         pos_emb = self.pos_embedding(pos)
+#         x = self.embed_dropout(tok_emb + pos_emb)
+
+#         attention_maps = []
+#         for block in self.blocks:
+#             x, attn_weights = block(x)
+#             attention_maps.append(attn_weights)
+
+#         x = self.ln_f(x)
+#         return x, attention_maps
+
+# # classifier
+# class SpeechClassifier(nn.Module):
+#     def __init__(self, config: TransformerConfig):
+#         super().__init__()
+#         self.config = config
+#         self.encoder = TransformerEncoder(config)
+#         self.classifier = nn.Sequential(
+#             nn.Linear(config.n_embed, config.ff_hidden_dim),
+#             nn.ReLU(),
+#             nn.Dropout(config.dropout),
+#             nn.Linear(config.ff_hidden_dim, config.n_classes)
+#         )
+
+#     def forward(self, input_ids):
+#         encoder_out, attention_maps = self.encoder(input_ids)
+#         pooled = encoder_out.mean(dim=1)  # Mean pooling
+#         logits = self.classifier(pooled)
+#         return logits, attention_maps
+
+
+# if __name__ == "__main__":
+#     config = TransformerConfig(
+#       vocab_size=15000,
+#       n_embed=128,
+#       n_layer=6,
+#       n_head=8,
+#       dropout=0.15,
+#       learning_rate=0.0005
+#     )
+#     model = SpeechClassifier(config)
+#     print(f"Model parameters: {sum(p.numel() for p in model.parameters())}")
+    
