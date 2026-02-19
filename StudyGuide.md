@@ -285,3 +285,16 @@ Input → Transformer Layers → Language Model Head → Logits
 | Attention | Multi-Head (MHA) | Grouped-Query (GQA) | Drastically lowers memory usage (VRAM) to allow for 100k+ token context windows.
 | Norm | Post-LayerNorm | Pre-RMSNorm | Prevents training crashes; more stable scaling to huge sizes.
 | Structure | Dense (All neurons fire) | MoE (Sparse) | Decouples model size from inference speed (Smarter + Faster).
+
+
+
+ - SGD Global Minimum - find globle minima in convex landscape,finds local minima in non-convex landscapes.
+ - MHA shared weights: Every head gets its own $W^Q, W^K, W^V$ matrices to learn different types of relationships.
+ - Dropout during inference (True/False): INCORRECT (False). You zero out neurons during training, not inference! If you drop neurons during inference, your model's predictions will become random and degraded. Dropout forces the network to learn robust features during training; at test time, you use all neurons (scaled appropriately) to get the best prediction.
+  - If a word is not in the vocabulary of a Word2Vec model, it is typically assigned a random vector or a special <UNK> token vector.
+  -  An LSTM uses "gates" (sigmoid functions that output values between 0 and 1) to control information flow.Forget Gate ($f_t$): Looks at the previous hidden state and current input, and outputs a number between 0 and 1. This is multiplied by the old cell state ($c_{t-1}$). A '0' means "completely forget this," and a '1' means "keep this entirely."Input Gate ($i_t$): Decides what new information we are going to store in the cell state.Output Gate ($o_t$): Decides what part of the cell state makes it out to the hidden state ($h_t$).
+  - If the learning rate is too high, the training loss would also bounce around or fail to decrease. When training loss goes down but validation loss goes up, it means the model is memorizing the training data and losing its ability to generalize to new, unseen data.
+  - BERT is trained to fill in blanks in the middle of a sentence using surrounding context. Text generation requires predicting $x_{t}$ given only $x_{1 \dots t-1}$. Because BERT's architecture assumes it can "see" the whole sequence, it cannot generate text autoregressively without "cheating" by looking ahead.
+  - if the LR too large: The loss will actually bounce around or diverge (explode). The steps are so big you overshoot the minimum completely.
+  - If the LR too small: It takes way too many epochs to converge, or it gets permanently stuck in a shallow local minimum.
+  - Beam Search guarantees high-probability (safe, correct) sequences but lacks diversity. Sampling provides diverse, creative text but risks generating lower-quality or nonsensical text.
