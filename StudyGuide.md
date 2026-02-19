@@ -16,6 +16,61 @@
 
  Why LSTMs? LSTMs were explicitly invented to solve this. They use gating mechanisms (forget, input, and output gates) that create a "gradient superhighway," allowing error signals to flow backward through time without vanishing.
 
+ ### Vanilla RNN
+  A recurrent neural network that maintains a hidden state passed through time.
+  - Input: current token 
+  - Previous hidden state: 
+  - Output: new hidden state 
+
+  Characteristics
+  - Processes sequence left → right
+  - Single hidden state
+  - Shares parameters across time steps
+
+  Limitations
+  - Suffers from vanishing/exploding gradients
+  - Poor at modeling long-term dependencies
+
+ ### Bidirectional RNN (BiRNN)
+ Runs two RNNs in opposite directions:
+  - Forward RNN: left → right
+  - Backward RNN: right → left
+ Characteristics
+  - Uses both past and future context
+  - Requires full sequence before processing
+ Typical Use Cases
+ - POS tagging
+ - Named Entity Recognition
+ - Sentence classification
+
+ ### LSTM (Long Short-Term Memory)
+ Designed to solve the vanishing gradient problem.
+ Key Components:
+ 1. Cell state 
+ 2. Hidden state 
+ 3. Forget gate, Input gate, Output gate
+
+ Gates
+
+ - Forget gate: decides what to remove
+ - Input gate: decides what to store
+ - Output gate: decides what to expose
+
+ Characteristics
+ - Maintains long-term memory
+ - More parameters than vanilla RNN
+ - Handles long sequences better
+
+Model	| Long-Term Memory | Bidirectional | Deep Layers | Sequence-to-Sequence	| Learns Word Embeddings
+|--------|--------|-------|------|------|------|
+| Vanilla | RNN	| No	| No	| No	| No	| No| 
+| BiRNN |	No	| Yes	| No	| No	| No|
+| Multi-layer| RNN	| No	| No	|Yes	| No	|No |
+| LSTM	| Yes |	No	| Optional|	No	|No|
+| GRU	|Yes | 	No	| Optional |	No|	No|
+| Seq2Seq	| Yes (if LSTM/GRU)	| Optional |	Optional	| Yes	| No|
+| Word2Vec	| No	| No	| No	| No	| Yes |
+
  ### Self-attention
  The attention matrix calculates a score for every query against every key, resulting in an $N \times N$ matrix
  
