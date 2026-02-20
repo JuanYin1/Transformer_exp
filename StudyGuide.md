@@ -5,16 +5,22 @@
  - BERT: Encoder-only, uses bidirectional context, great for sentence classification. (with their ability to remember long-range dependencies, are well-suited for machine translation applications, where context and sequence memory are crucial.)
  - GPT: Decoder-only, uses causal (left-to-right) context, used for generation
  - seq2seq: Encoder-Decoder, neural network architecture designed to transform one sequence into another. It is widely used in tasks such as machine translation, text summarization, speech recognition, and image captioning.
+
  ### How Seq2Seq Works
  The process involves two phases:
 
  Encoding: The encoder processes the input sequence token by token, updating its internal state at each step. After processing the entire sequence, it outputs a context vector summarizing the input. (one vector only for the model)
 
  Decoding: The decoder uses the context vector to generate the output sequence token by token. During training, techniques like teacher forcing are used, where the actual target token is provided as input to the decoder instead of its previous prediction.
+
  ### RNN and LSTM
  Increasing the learning rate actually often leads to exploding gradients (where weights become huge and unstable), not fixing vanishing ones. The "Vanishing Gradient" problem means the gradient signal becomes virtually zero as it travels back through long sequences, so the model "forgets" early inputs.
 
  Why LSTMs? LSTMs were explicitly invented to solve this. They use gating mechanisms (forget, input, and output gates) that create a "gradient superhighway," allowing error signals to flow backward through time without vanishing.
+
+ ### DAN 
+ DAN stands for Deep Averaging Network. It takes all the word embeddings in a sentence, adds them up, and divides by the number of words (averaging). Because addition is commutative ($A + B = B + A$), a DAN completely destroys word order. "Dog bites man" and "Man bites dog" have the exact same representation in a DAN
+
 
  ### Vanilla RNN
   A recurrent neural network that maintains a hidden state passed through time.
@@ -63,7 +69,7 @@
 
 Model	| Long-Term Memory | Bidirectional | Deep Layers | Sequence-to-Sequence	| Learns Word Embeddings
 |--------|--------|-------|------|------|------|
-| Vanilla | RNN	| No	| No	| No	| No	| No| 
+| Vanilla RNN	| No	| No	| No	| No	| No| 
 | BiRNN |	No	| Yes	| No	| No	| No|
 | Multi-layer| RNN	| No	| No	|Yes	| No	|No |
 | LSTM	| Yes |	No	| Optional|	No	|No|
@@ -76,6 +82,8 @@ Model	| Long-Term Memory | Bidirectional | Deep Layers | Sequence-to-Sequence	| 
  
  Impact on Long Docs in self-attention: While "time" is a factor, the bigger killer is Memory (RAM). Because the complexity is quadratic, doubling the sequence length quadruples the memory required. Processing a whole book (e.g., 50,000 tokens) would create an attention matrix with 2.5 billion entries, likely causing the GPU to run out of memory (OOM) immediately.
 
+ ### training and inference 
+ "In-context learning" or "Prompting" means you just type examples into the text prompt. The model's internal weights ($\theta$) are completely frozen/unchanged. It "learns" temporarily just by reading your prompt in the inference phase.
 
 # Cards
 | Key | Concept |
@@ -353,3 +361,5 @@ Input → Transformer Layers → Language Model Head → Logits
   - if the LR too large: The loss will actually bounce around or diverge (explode). The steps are so big you overshoot the minimum completely.
   - If the LR too small: It takes way too many epochs to converge, or it gets permanently stuck in a shallow local minimum.
   - Beam Search guarantees high-probability (safe, correct) sequences but lacks diversity. Sampling provides diverse, creative text but risks generating lower-quality or nonsensical text.
+
+
