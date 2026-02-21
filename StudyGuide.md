@@ -20,7 +20,13 @@
 
  ### DAN 
  DAN stands for Deep Averaging Network. It takes all the word embeddings in a sentence, adds them up, and divides by the number of words (averaging). Because addition is commutative ($A + B = B + A$), a DAN completely destroys word order. "Dog bites man" and "Man bites dog" have the exact same representation in a DAN
+  - A) Core Math: You mentioned the FFNN and ReLU, but you missed the most important first step: Averaging. The core mathematical operation is taking the element-wise mean of all the word embeddings in the input sequence before passing it to the FFNN.
+  - B) Failure case: Your reasoning was perfect! A specific example of this failure is negation/sentiment analysis. Because a DAN ignores word order, the sentences "The movie was not bad, it was good" and "The movie was not good, it was bad" yield the exact same average vector, causing the DAN to fail miserably compared to an RNN.
 
+
+ ### QKV
+ - Q, K, V in Seq2Seq: * Query: The Decoder's current hidden state (What am I currently translating?).
+ - Keys/Values: The Encoder's hidden states (What information do I have from the source sentence?).
 
  ### Vanilla RNN
   A recurrent neural network that maintains a hidden state passed through time.
@@ -84,6 +90,11 @@ Model	| Long-Term Memory | Bidirectional | Deep Layers | Sequence-to-Sequence	| 
 
  ### training and inference 
  "In-context learning" or "Prompting" means you just type examples into the text prompt. The model's internal weights ($\theta$) are completely frozen/unchanged. It "learns" temporarily just by reading your prompt in the inference phase.
+
+
+ ### top-k / top-p
+ How Top-$k$ works: The model looks at the whole vocabulary, isolates the top 5 most likely words, throws away the rest of the vocabulary, and then rolls a weighted die (samples) among those 5. It doesn't pick 5 times in a row; it picks one next token randomly from that top-5 pool.
+ 
 
 # Cards
 | Key | Concept |
