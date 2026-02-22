@@ -95,6 +95,38 @@ Model	| Long-Term Memory | Bidirectional | Deep Layers | Sequence-to-Sequence	| 
  ### top-k / top-p
  How Top-$k$ works: The model looks at the whole vocabulary, isolates the top 5 most likely words, throws away the rest of the vocabulary, and then rolls a weighted die (samples) among those 5. It doesn't pick 5 times in a row; it picks one next token randomly from that top-5 pool.
  
+ ### Chain-of-Thought (CoT) Prompting
+ For multi-step problems, we can ask the model to generate intermediate steps before the final answer.
+ 
+ CoT improves performance without changing model parameters.
+
+ ### Few shot / Few shot CoT / zero shot / zero shot CoT
+ Prompting enables task adaptation at inference time
+ 1. Zero-shot: 
+  - Highly sensitive to wording 
+  - Prompt design can dramatically change performance 
+ 2. Few-shot:
+ - Demonstrations reduce ambiguity
+ - But performance depends on example choice and order
+
+ ### Instruction Tuning / Instruction Fine-Tuning / RLHF
+ Instruction Fine-Tuning (SFT)
+ - Supervised fine-tuning on (instruction, response) pairs
+ - Optionally followed by preference optimization (e.g., RLHF)
+ - Learns from demonstrations (positive examples only)
+ - Optimizes likelihood of provided answers
+ - May encourage confident but incorrect responses
+ - No explicit signal for “bad” outputs
+ 
+ Reinforcement Learning from Human Feedback (RLHF)
+  - Learn a reward model from human preference comparisons
+  - Optimize the language model to maximize that reward
+  - Learns from preferences (good vs bad comparisons)
+  - Optimizes a reward signal
+  - Penalizes undesirable behaviors
+  - Encourages calibrated responses or abstention
+
+
 
 # Cards
 | Key | Concept |
