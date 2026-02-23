@@ -1,34 +1,27 @@
 # Model type
  - Skip-gram Model: we predict the surrounding context words given the current center word. Used in Word2Vec, skip-gram models predict surrounding words given a target word. They are effective for capturing semantic relationships between words.
  - N-gram Model: Predicting the center word from context is called CBOW (Continuous Bag of Words).
+ - DAN - FNN model
  - Neural networks based language models: RNN / LSTM / GRUs / seq2seq
  - BERT: Encoder-only, uses bidirectional context, great for sentence classification. (with their ability to remember long-range dependencies, are well-suited for machine translation applications, where context and sequence memory are crucial.)
  - GPT: Decoder-only, uses causal (left-to-right) context, used for generation
  - seq2seq: Encoder-Decoder, neural network architecture designed to transform one sequence into another. It is widely used in tasks such as machine translation, text summarization, speech recognition, and image captioning.
 
- ### How Seq2Seq Works
- The process involves two phases:
-
- Encoding: The encoder processes the input sequence token by token, updating its internal state at each step. After processing the entire sequence, it outputs a context vector summarizing the input. (one vector only for the model)
-
- Decoding: The decoder uses the context vector to generate the output sequence token by token. During training, techniques like teacher forcing are used, where the actual target token is provided as input to the decoder instead of its previous prediction.
+ ### DAN 
+ DAN stands for Deep Averaging Network. It takes all the word embeddings in a sentence, adds them up, and divides by the number of words **(averaging)**. Because addition is commutative ($A + B = B + A$), a DAN completely destroys word order. "Dog bites man" and "Man bites dog" have the exact same representation in a DAN
+  - A) Core Math: You mentioned the FFNN and ReLU, but you missed the most important first step: Averaging. The core mathematical operation is taking the element-wise mean of all the word embeddings in the input sequence before passing it to the FFNN.
+  - B) Failure case: Your reasoning was perfect! A specific example of this failure is negation/sentiment analysis. Because a DAN ignores word order, the sentences "The movie was not bad, it was good" and "The movie was not good, it was bad" yield the exact same average vector, causing the DAN to fail miserably compared to an RNN.
 
  ### RNN and LSTM
+ RNN is used to solve the problem of the DAN can only process the fixed sequence length.
+ 
+ LSTM is used to solve the problem of RNN sometimes will have vanishing gradients when there are deep layers.
+
  Increasing the learning rate actually often leads to exploding gradients (where weights become huge and unstable), not fixing vanishing ones. The "Vanishing Gradient" problem means the gradient signal becomes virtually zero as it travels back through long sequences, so the model "forgets" early inputs.
 
  Why LSTMs? LSTMs were explicitly invented to solve this. They use gating mechanisms (forget, input, and output gates) that create a "gradient superhighway," allowing error signals to flow backward through time without vanishing.
 
- ### DAN 
- DAN stands for Deep Averaging Network. It takes all the word embeddings in a sentence, adds them up, and divides by the number of words (averaging). Because addition is commutative ($A + B = B + A$), a DAN completely destroys word order. "Dog bites man" and "Man bites dog" have the exact same representation in a DAN
-  - A) Core Math: You mentioned the FFNN and ReLU, but you missed the most important first step: Averaging. The core mathematical operation is taking the element-wise mean of all the word embeddings in the input sequence before passing it to the FFNN.
-  - B) Failure case: Your reasoning was perfect! A specific example of this failure is negation/sentiment analysis. Because a DAN ignores word order, the sentences "The movie was not bad, it was good" and "The movie was not good, it was bad" yield the exact same average vector, causing the DAN to fail miserably compared to an RNN.
-
-
- ### QKV
- - Q, K, V in Seq2Seq: * Query: The Decoder's current hidden state (What am I currently translating?).
- - Keys/Values: The Encoder's hidden states (What information do I have from the source sentence?).
-
- ### Vanilla RNN
+### Vanilla RNN
   A recurrent neural network that maintains a hidden state passed through time.
   - Input: current token 
   - Previous hidden state: 
@@ -83,31 +76,106 @@ Model	| Long-Term Memory | Bidirectional | Deep Layers | Sequence-to-Sequence	| 
 | Seq2Seq	| Yes (if LSTM/GRU)	| Optional |	Optional	| Yes	| No|
 | Word2Vec	| No	| No	| No	| No	| Yes |
 
+ ### BERT - (encoder with mask for classification task)
+ 
+ Idea: we want different embedding for each word in each context it appears
+
+ 1. BERT is a Transformer encoder: bidirectional attention
+ 2. BERT is used to make a classic pattern for mordem NLP: pre-training -> fine-tune 
+ 3. BERT cannot generate text (at least not in an obvious way)
+ 4. Could put [MASK] at the end repeatedly, but this is slow and in practice lacks coherence E.g,: "The cat sat on the [MASK]" → "The cat sat on the mat"
+ 5. Masked language models are intended to be used primarily for "analysis" tasks (e.g., classification, question answering, etc.) rather than generation tasks
+ 6. each token depends on all the other token, soKV cache do not work here, since KV cache works when the current calculation only depends on the previous layer's of K and V
+
+ ### How Seq2Seq Works
+ Seq2Seq = Encoding RNN + Decoding RNN 
+
+ The process involves two phases:
+
+ Encoding: The encoder processes the input sequence token by token, updating its internal state at each step. After processing the entire sequence, it outputs a context vector summarizing the input. (one vector only for the model)
+
+ Decoding: The decoder uses the context vector to generate the output sequence token by token. During training, techniques like teacher forcing are used, where the actual target token is provided as input to the decoder instead of its previous prediction.
+
+ Optimization: Attention is a way to focus on particular parts of the input - mproves sequence-to-sequence a lot by letting each hidden layer of decoder to interact with each of the hidden layer's Similarity scores of encoder
+ And it will generate a context vector
+ ![seq2seq](./Pics/Advanced%20Seq2Seq.png)
+
+ ### Token Selection
+ In **greedy decoding**, usually we decode until the model produces an <END> token
+ - For example: <START> he hit me with a pie <END>
+ 
+ In **beam search decoding**, different hypotheses may produce <END> tokens on different timesteps
+ - When a hypothesis produces <END>, that hypothesis is complete.
+ - Place it aside and continue exploring other hypotheses via beam search.
+ 
+ Usually we continue beam search until:
+ - We reach timestep T (where T is some pre-defined cutoff), or
+ - We have at least n completed hypotheses (where n is pre-defined cutoff)
+
+ And sampling we will cover later:
+
+### top-k / top-p / Sampling 
+  - How **Top-$k$** works: The model looks at the whole vocabulary, isolates the top 5 most likely words, throws away the rest of the vocabulary, and then rolls a weighted die (samples) among those 5. It doesn't pick 5 times in a row; it picks one next token randomly from that top-5 pool.
+  - **Top-k**: fixed vocabulary size - A fixed k ignores distribution shape.
+  - **Top-p**: fixed probability mass
+  - **Sampling**: Draw tokens from the probability distribution
+  ![topkp](./Pics/sampling.png)
+
+
+ ### QKV
+ 
+ Q, K, V in Seq2Seq:
+ - Query: The Decoder's current hidden state (What am I currently translating?). - Source sequence
+ - Keys/Values: The Encoder's hidden states (What information do I have from the source sentence?). - target sequence
+ 
+ QKV in self-attention:
+ - all of them are from the current hidden statess
+
+ 
  ### Self-attention
  The attention matrix calculates a score for every query against every key, resulting in an $N \times N$ matrix
  
  Impact on Long Docs in self-attention: While "time" is a factor, the bigger killer is Memory (RAM). Because the complexity is quadratic, doubling the sequence length quadruples the memory required. Processing a whole book (e.g., 50,000 tokens) would create an attention matrix with 2.5 billion entries, likely causing the GPU to run out of memory (OOM) immediately.
 
+ ### Scaling Laws
+ Used in model training since it is expensive to pretrain a large language model (takes a lot of compute resources)
+ - une on small models, extrapolate to large ones
+ - scale according to compute budget: resource C = N * D (N = number of parameters = model size, D = number of training tokens = dataset size)
+ 1. **Chinchilla Scaling Laws Approach** - Fix FLOPs and vary model size and training tokens
+ 2. **IsoFlops** - Fix flops and vary model size and training tokens
+
  ### training and inference 
  "In-context learning" or "Prompting" means you just type examples into the text prompt. The model's internal weights ($\theta$) are completely frozen/unchanged. It "learns" temporarily just by reading your prompt in the inference phase.
-
-
- ### top-k / top-p
- How Top-$k$ works: The model looks at the whole vocabulary, isolates the top 5 most likely words, throws away the rest of the vocabulary, and then rolls a weighted die (samples) among those 5. It doesn't pick 5 times in a row; it picks one next token randomly from that top-5 pool.
  
  ### Chain-of-Thought (CoT) Prompting
  For multi-step problems, we can ask the model to generate intermediate steps before the final answer.
  
  CoT improves performance without changing model parameters.
 
- ### Few shot / Few shot CoT / zero shot / zero shot CoT
+ ### Few shot / Few shot CoT / zero shot / zero shot CoT / RF
  Prompting enables task adaptation at inference time
- 1. Zero-shot: 
+ 1. Zero-shot Prompting: 
   - Highly sensitive to wording 
   - Prompt design can dramatically change performance 
- 2. Few-shot:
+ 2. Few-shot Prompting:
  - Demonstrations reduce ambiguity
  - But performance depends on example choice and order
+
+ CoT improves performance without changing model parameters.
+
+ 3. **Zero-Shot** Chain-of-Thought Prompting:
+ - Do not need few-shot examples in Chain-of-thought Prompting
+ - Simply adding a reasoning cue can improve performance: "Let's think step by step"
+ 4. **Self-Consistency** in Chain-of-Thought Prompting:
+ - Instead of generating one chain of thought, sample multiple reasoning paths.
+ - Take a majority vote over the final answers.
+
+ InstructGPT: scaling up RLHF
+ 1) Instruction Fine-tuning; 
+ 2) Human preferences from comparison data; 
+ 3) Optimize a policy against a reward model using RL
+ ![RF](./Pics/RF.png)
+
 
  ### Instruction Tuning / Instruction Fine-Tuning / RLHF
  Instruction Fine-Tuning (SFT)
