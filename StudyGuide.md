@@ -87,6 +87,14 @@ Model	| Long-Term Memory | Bidirectional | Deep Layers | Sequence-to-Sequence	| 
  5. Masked language models are intended to be used primarily for "analysis" tasks (e.g., classification, question answering, etc.) rather than generation tasks
  6. each token depends on all the other token, soKV cache do not work here, since KV cache works when the current calculation only depends on the previous layer's of K and V
 
+ ### GPT-2
+ - Uses Transformer decoder-only architecture
+ - Unidirectional (causal) attention (current token only have access to the previous tokens)
+
+ Compare to BERT:
+ - BERT: Pretraining + Supervised Fine-Tuning (Pretrained on large corpus (unsupervised) -> Fine-tuned on specific tasks (supervised))
+ - GPT-2: Mostly Zero-shot (Originally) (Just scaling next-token prediction -> On a huge dataset -> Without task-specific fine-tuning)
+
  ### How Seq2Seq Works
  Seq2Seq = Encoding RNN + Decoding RNN 
 
@@ -201,14 +209,14 @@ Model	| Long-Term Memory | Bidirectional | Deep Layers | Sequence-to-Sequence	| 
  - Efficiency vs. Performance: Despite not looking at the entire sequence, this approach reached the best classification accuracy (83.20%) in your Part 3 experiments. This suggests that for speech classification, the model often only needs to capture nearby token relationships and local linguistic patterns to identify the speaker effectively
 
  ### Encoder-decoder model
-  | Feature             | BART                  | T5                  |
-  | ------------------- | --------------------- | ------------------- |
-  | Structure           | Encoder–Decoder       | Encoder–Decoder     |
-  | Positional Encoding | Absolute              | Relative            |
-  | LayerNorm           | Post-LN               | Pre-LN              |
-  | Pretraining         | Denoising autoencoder | Span corruption     |
-  | Philosophy          | General seq2seq       | Strict text-to-text |
-  | Attention Bias      | No relative bias      | Relative bias       |
+  | Feature             | BART                  | T5                  | GPT-2        | GPT-3                                           |
+  | ------------------- | --------------------- | ------------------- |--------------|-------------------------------------------------|
+  | Structure           | Encoder–Decoder       | Encoder–Decoder     | decoder-only |in-context learning (prompting,no weights update) |
+  | Positional Encoding | Absolute              | Relative            | N/A          |                                                 |
+  | LayerNorm           | Post-LN               | Pre-LN              | N/A          |                                                 |
+  | Pretraining         | Denoising autoencoder | Span corruption     | N/A          |                                                 |
+  | Philosophy          | General seq2seq       | Strict text-to-text | gerneration  |                                                 |
+  | Attention Bias      | No relative bias      | Relative bias       | N/A          |                                                 |
 
 # Cards
 | Key | Concept |
