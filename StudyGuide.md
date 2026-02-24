@@ -194,7 +194,21 @@ Model	| Long-Term Memory | Bidirectional | Deep Layers | Sequence-to-Sequence	| 
   - Penalizes undesirable behaviors
   - Encourages calibrated responses or abstention
 
+ ### Local window attention - optimization
+ Here is how that property works based on the sources:
+ - From Quadratic to Linear: In the standard transformer architecture, every token must calculate a weight for every other token in the sequence, resulting in O(n^2) complexity. In contrast, local window attention restricts each token to attending only to its local neighborhood within a specific window size (e.g., w=8). This reduces the computational and memory complexity to O(n×w), which is much more efficient for long sequences.
+ - Sparse Masking: This is achieved through sparse masking, where all attention weights for tokens outside the window are essentially set to zero. You can see this visually in the sources; while a standard encoder's attention matrix is fully filled, the local window matrix looks like a diagonal band, showing that tokens only interact with their immediate neighbors.
+ - Efficiency vs. Performance: Despite not looking at the entire sequence, this approach reached the best classification accuracy (83.20%) in your Part 3 experiments. This suggests that for speech classification, the model often only needs to capture nearby token relationships and local linguistic patterns to identify the speaker effectively
 
+ ### Encoder-decoder model
+  | Feature             | BART                  | T5                  |
+  | ------------------- | --------------------- | ------------------- |
+  | Structure           | Encoder–Decoder       | Encoder–Decoder     |
+  | Positional Encoding | Absolute              | Relative            |
+  | LayerNorm           | Post-LN               | Pre-LN              |
+  | Pretraining         | Denoising autoencoder | Span corruption     |
+  | Philosophy          | General seq2seq       | Strict text-to-text |
+  | Attention Bias      | No relative bias      | Relative bias       |
 
 # Cards
 | Key | Concept |
