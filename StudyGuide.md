@@ -1,26 +1,222 @@
 # Model type
  - Skip-gram Model: we predict the surrounding context words given the current center word. Used in Word2Vec, skip-gram models predict surrounding words given a target word. They are effective for capturing semantic relationships between words.
  - N-gram Model: Predicting the center word from context is called CBOW (Continuous Bag of Words).
+ - DAN - FNN model
  - Neural networks based language models: RNN / LSTM / GRUs / seq2seq
  - BERT: Encoder-only, uses bidirectional context, great for sentence classification. (with their ability to remember long-range dependencies, are well-suited for machine translation applications, where context and sequence memory are crucial.)
  - GPT: Decoder-only, uses causal (left-to-right) context, used for generation
  - seq2seq: Encoder-Decoder, neural network architecture designed to transform one sequence into another. It is widely used in tasks such as machine translation, text summarization, speech recognition, and image captioning.
+
+ ### DAN 
+ DAN stands for Deep Averaging Network. It takes all the word embeddings in a sentence, adds them up, and divides by the number of words **(averaging)**. Because addition is commutative ($A + B = B + A$), a DAN completely destroys word order. "Dog bites man" and "Man bites dog" have the exact same representation in a DAN
+  - A) Core Math: You mentioned the FFNN and ReLU, but you missed the most important first step: Averaging. The core mathematical operation is taking the element-wise mean of all the word embeddings in the input sequence before passing it to the FFNN.
+  - B) Failure case: Your reasoning was perfect! A specific example of this failure is negation/sentiment analysis. Because a DAN ignores word order, the sentences "The movie was not bad, it was good" and "The movie was not good, it was bad" yield the exact same average vector, causing the DAN to fail miserably compared to an RNN.
+
+ ### RNN and LSTM
+ RNN is used to solve the problem of the DAN can only process the fixed sequence length.
+ 
+ LSTM is used to solve the problem of RNN sometimes will have vanishing gradients when there are deep layers.
+
+ Increasing the learning rate actually often leads to exploding gradients (where weights become huge and unstable), not fixing vanishing ones. The "Vanishing Gradient" problem means the gradient signal becomes virtually zero as it travels back through long sequences, so the model "forgets" early inputs.
+
+ Why LSTMs? LSTMs were explicitly invented to solve this. They use gating mechanisms (forget, input, and output gates) that create a "gradient superhighway," allowing error signals to flow backward through time without vanishing.
+
+### Vanilla RNN
+  A recurrent neural network that maintains a hidden state passed through time.
+  - Input: current token 
+  - Previous hidden state: 
+  - Output: new hidden state 
+
+  Characteristics
+  - Processes sequence left → right
+  - Single hidden state
+  - Shares parameters across time steps
+
+  Limitations
+  - Suffers from vanishing/exploding gradients
+  - Poor at modeling long-term dependencies
+
+ ### Bidirectional RNN (BiRNN)
+ Runs two RNNs in opposite directions:
+  - Forward RNN: left → right
+  - Backward RNN: right → left
+ Characteristics
+  - Uses both past and future context
+  - Requires full sequence before processing
+ Typical Use Cases
+ - POS tagging
+ - Named Entity Recognition
+ - Sentence classification
+
+ ### LSTM (Long Short-Term Memory)
+ Designed to solve the vanishing gradient problem.
+ Key Components:
+ 1. Cell state 
+ 2. Hidden state 
+ 3. Forget gate, Input gate, Output gate
+
+ Gates
+
+ - Forget gate: decides what to remove
+ - Input gate: decides what to store
+ - Output gate: decides what to expose
+
+ Characteristics
+ - Maintains long-term memory
+ - More parameters than vanilla RNN
+ - Handles long sequences better
+
+Model	| Long-Term Memory | Bidirectional | Deep Layers | Sequence-to-Sequence	| Learns Word Embeddings
+|--------|--------|-------|------|------|------|
+| Vanilla RNN	| No	| No	| No	| No	| No| 
+| BiRNN |	No	| Yes	| No	| No	| No|
+| Multi-layer| RNN	| No	| No	|Yes	| No	|No |
+| LSTM	| Yes |	No	| Optional|	No	|No|
+| GRU	|Yes | 	No	| Optional |	No|	No|
+| Seq2Seq	| Yes (if LSTM/GRU)	| Optional |	Optional	| Yes	| No|
+| Word2Vec	| No	| No	| No	| No	| Yes |
+
+ ### BERT - (encoder with mask for classification task)
+ 
+ Idea: we want different embedding for each word in each context it appears
+
+ 1. BERT is a Transformer encoder: bidirectional attention
+ 2. BERT is used to make a classic pattern for mordem NLP: pre-training -> fine-tune 
+ 3. BERT cannot generate text (at least not in an obvious way)
+ 4. Could put [MASK] at the end repeatedly, but this is slow and in practice lacks coherence E.g,: "The cat sat on the [MASK]" → "The cat sat on the mat"
+ 5. Masked language models are intended to be used primarily for "analysis" tasks (e.g., classification, question answering, etc.) rather than generation tasks
+ 6. each token depends on all the other token, soKV cache do not work here, since KV cache works when the current calculation only depends on the previous layer's of K and V
+
+ ### GPT-2
+ - Uses Transformer decoder-only architecture
+ - Unidirectional (causal) attention (current token only have access to the previous tokens)
+
+ Compare to BERT:
+ - BERT: Pretraining + Supervised Fine-Tuning (Pretrained on large corpus (unsupervised) -> Fine-tuned on specific tasks (supervised))
+ - GPT-2: Mostly Zero-shot (Originally) (Just scaling next-token prediction -> On a huge dataset -> Without task-specific fine-tuning)
+
  ### How Seq2Seq Works
+ Seq2Seq = Encoding RNN + Decoding RNN 
+
  The process involves two phases:
 
  Encoding: The encoder processes the input sequence token by token, updating its internal state at each step. After processing the entire sequence, it outputs a context vector summarizing the input. (one vector only for the model)
 
  Decoding: The decoder uses the context vector to generate the output sequence token by token. During training, techniques like teacher forcing are used, where the actual target token is provided as input to the decoder instead of its previous prediction.
- ### RNN and LSTM
- Increasing the learning rate actually often leads to exploding gradients (where weights become huge and unstable), not fixing vanishing ones. The "Vanishing Gradient" problem means the gradient signal becomes virtually zero as it travels back through long sequences, so the model "forgets" early inputs.
 
- Why LSTMs? LSTMs were explicitly invented to solve this. They use gating mechanisms (forget, input, and output gates) that create a "gradient superhighway," allowing error signals to flow backward through time without vanishing.
+ Optimization: Attention is a way to focus on particular parts of the input - mproves sequence-to-sequence a lot by letting each hidden layer of decoder to interact with each of the hidden layer's Similarity scores of encoder
+ And it will generate a context vector
+ ![seq2seq](./Pics/Advanced%20Seq2Seq.png)
 
+ ### Token Selection
+ In **greedy decoding**, usually we decode until the model produces an <END> token
+ - For example: <START> he hit me with a pie <END>
+ 
+ In **beam search decoding**, different hypotheses may produce <END> tokens on different timesteps
+ - When a hypothesis produces <END>, that hypothesis is complete.
+ - Place it aside and continue exploring other hypotheses via beam search.
+ 
+ Usually we continue beam search until:
+ - We reach timestep T (where T is some pre-defined cutoff), or
+ - We have at least n completed hypotheses (where n is pre-defined cutoff)
+
+ And sampling we will cover later:
+
+### top-k / top-p / Sampling 
+  - How **Top-$k$** works: The model looks at the whole vocabulary, isolates the top 5 most likely words, throws away the rest of the vocabulary, and then rolls a weighted die (samples) among those 5. It doesn't pick 5 times in a row; it picks one next token randomly from that top-5 pool.
+  - **Top-k**: fixed vocabulary size - A fixed k ignores distribution shape.
+  - **Top-p**: fixed probability mass
+  - **Sampling**: Draw tokens from the probability distribution
+  ![topkp](./Pics/sampling.png)
+
+
+ ### QKV
+ 
+ Q, K, V in Seq2Seq:
+ - Query: The Decoder's current hidden state (What am I currently translating?). - Source sequence
+ - Keys/Values: The Encoder's hidden states (What information do I have from the source sentence?). - target sequence
+ 
+ QKV in self-attention:
+ - all of them are from the current hidden statess
+
+ 
  ### Self-attention
  The attention matrix calculates a score for every query against every key, resulting in an $N \times N$ matrix
  
  Impact on Long Docs in self-attention: While "time" is a factor, the bigger killer is Memory (RAM). Because the complexity is quadratic, doubling the sequence length quadruples the memory required. Processing a whole book (e.g., 50,000 tokens) would create an attention matrix with 2.5 billion entries, likely causing the GPU to run out of memory (OOM) immediately.
 
+ ### Scaling Laws
+ Used in model training since it is expensive to pretrain a large language model (takes a lot of compute resources)
+ - une on small models, extrapolate to large ones
+ - scale according to compute budget: resource C = N * D (N = number of parameters = model size, D = number of training tokens = dataset size)
+ 1. **Chinchilla Scaling Laws Approach** - Fix FLOPs and vary model size and training tokens
+ 2. **IsoFlops** - Fix flops and vary model size and training tokens
+
+ ### training and inference 
+ "In-context learning" or "Prompting" means you just type examples into the text prompt. The model's internal weights ($\theta$) are completely frozen/unchanged. It "learns" temporarily just by reading your prompt in the inference phase.
+ 
+ ### Chain-of-Thought (CoT) Prompting
+ For multi-step problems, we can ask the model to generate intermediate steps before the final answer.
+ 
+ CoT improves performance without changing model parameters.
+
+ ### Few shot / Few shot CoT / zero shot / zero shot CoT / RF
+ Prompting enables task adaptation at inference time
+ 1. Zero-shot Prompting: 
+  - Highly sensitive to wording 
+  - Prompt design can dramatically change performance 
+ 2. Few-shot Prompting:
+ - Demonstrations reduce ambiguity
+ - But performance depends on example choice and order
+
+ CoT improves performance without changing model parameters.
+
+ 3. **Zero-Shot** Chain-of-Thought Prompting:
+ - Do not need few-shot examples in Chain-of-thought Prompting
+ - Simply adding a reasoning cue can improve performance: "Let's think step by step"
+ 4. **Self-Consistency** in Chain-of-Thought Prompting:
+ - Instead of generating one chain of thought, sample multiple reasoning paths.
+ - Take a majority vote over the final answers.
+
+ InstructGPT: scaling up RLHF
+ 1) Instruction Fine-tuning; 
+ 2) Human preferences from comparison data; 
+ 3) Optimize a policy against a reward model using RL
+ ![RF](./Pics/RF.png)
+
+
+ ### Instruction Tuning / Instruction Fine-Tuning / RLHF
+ Instruction Fine-Tuning (SFT)
+ - Supervised fine-tuning on (instruction, response) pairs
+ - Optionally followed by preference optimization (e.g., RLHF)
+ - Learns from demonstrations (positive examples only)
+ - Optimizes likelihood of provided answers
+ - May encourage confident but incorrect responses
+ - No explicit signal for “bad” outputs
+ 
+ Reinforcement Learning from Human Feedback (RLHF)
+  - Learn a reward model from human preference comparisons
+  - Optimize the language model to maximize that reward
+  - Learns from preferences (good vs bad comparisons)
+  - Optimizes a reward signal
+  - Penalizes undesirable behaviors
+  - Encourages calibrated responses or abstention
+
+ ### Local window attention - optimization
+ Here is how that property works based on the sources:
+ - From Quadratic to Linear: In the standard transformer architecture, every token must calculate a weight for every other token in the sequence, resulting in O(n^2) complexity. In contrast, local window attention restricts each token to attending only to its local neighborhood within a specific window size (e.g., w=8). This reduces the computational and memory complexity to O(n×w), which is much more efficient for long sequences.
+ - Sparse Masking: This is achieved through sparse masking, where all attention weights for tokens outside the window are essentially set to zero. You can see this visually in the sources; while a standard encoder's attention matrix is fully filled, the local window matrix looks like a diagonal band, showing that tokens only interact with their immediate neighbors.
+ - Efficiency vs. Performance: Despite not looking at the entire sequence, this approach reached the best classification accuracy (83.20%) in your Part 3 experiments. This suggests that for speech classification, the model often only needs to capture nearby token relationships and local linguistic patterns to identify the speaker effectively
+
+ ### Encoder-decoder model
+  | Feature             | BART                  | T5                  | GPT-2        | GPT-3                                           |
+  | ------------------- | --------------------- | ------------------- |--------------|-------------------------------------------------|
+  | Structure           | Encoder–Decoder       | Encoder–Decoder     | decoder-only |in-context learning (prompting,no weights update) |
+  | Positional Encoding | Absolute              | Relative            | N/A          |                                                 |
+  | LayerNorm           | Post-LN               | Pre-LN              | N/A          |                                                 |
+  | Pretraining         | Denoising autoencoder | Span corruption     | N/A          |                                                 |
+  | Philosophy          | General seq2seq       | Strict text-to-text | gerneration  |                                                 |
+  | Attention Bias      | No relative bias      | Relative bias       | N/A          |                                                 |
 
 # Cards
 | Key | Concept |
@@ -285,3 +481,18 @@ Input → Transformer Layers → Language Model Head → Logits
 | Attention | Multi-Head (MHA) | Grouped-Query (GQA) | Drastically lowers memory usage (VRAM) to allow for 100k+ token context windows.
 | Norm | Post-LayerNorm | Pre-RMSNorm | Prevents training crashes; more stable scaling to huge sizes.
 | Structure | Dense (All neurons fire) | MoE (Sparse) | Decouples model size from inference speed (Smarter + Faster).
+
+
+
+ - SGD Global Minimum - find globle minima in convex landscape,finds local minima in non-convex landscapes.
+ - MHA shared weights: Every head gets its own $W^Q, W^K, W^V$ matrices to learn different types of relationships.
+ - Dropout during inference (True/False): INCORRECT (False). You zero out neurons during training, not inference! If you drop neurons during inference, your model's predictions will become random and degraded. Dropout forces the network to learn robust features during training; at test time, you use all neurons (scaled appropriately) to get the best prediction.
+  - If a word is not in the vocabulary of a Word2Vec model, it is typically assigned a random vector or a special <UNK> token vector.
+  -  An LSTM uses "gates" (sigmoid functions that output values between 0 and 1) to control information flow.Forget Gate ($f_t$): Looks at the previous hidden state and current input, and outputs a number between 0 and 1. This is multiplied by the old cell state ($c_{t-1}$). A '0' means "completely forget this," and a '1' means "keep this entirely."Input Gate ($i_t$): Decides what new information we are going to store in the cell state.Output Gate ($o_t$): Decides what part of the cell state makes it out to the hidden state ($h_t$).
+  - If the learning rate is too high, the training loss would also bounce around or fail to decrease. When training loss goes down but validation loss goes up, it means the model is memorizing the training data and losing its ability to generalize to new, unseen data.
+  - BERT is trained to fill in blanks in the middle of a sentence using surrounding context. Text generation requires predicting $x_{t}$ given only $x_{1 \dots t-1}$. Because BERT's architecture assumes it can "see" the whole sequence, it cannot generate text autoregressively without "cheating" by looking ahead.
+  - if the LR too large: The loss will actually bounce around or diverge (explode). The steps are so big you overshoot the minimum completely.
+  - If the LR too small: It takes way too many epochs to converge, or it gets permanently stuck in a shallow local minimum.
+  - Beam Search guarantees high-probability (safe, correct) sequences but lacks diversity. Sampling provides diverse, creative text but risks generating lower-quality or nonsensical text.
+
+
