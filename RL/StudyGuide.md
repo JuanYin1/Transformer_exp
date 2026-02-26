@@ -1,12 +1,19 @@
-## Step by step
-1. Environment Variables - with api key or the model or the Weights & Biases
+# Step by step
+1. Pre-Training
+2. Post-Training (Alignment + Specialization)
+ - Supervised Fine-Tuning (SFT)
+ - Preference Training (Reward Model)
+ - RLHF (Reinforcement Learning from Human Feedback)
+
+# LORA
+LoRA is a parameter-efficient training technique.
+You can apply LoRA during:
+ - SFT
+ - Reward model training
+ - RLHF
+ - Even domain adaptation
 ```python
-# Required for RULER judge model
-os.environ["OPENAI_API_KEY"] = ""
-
-# Required for Weights & Biases
-os.environ["WANDB_API_KEY"] = ""
+SFT (full fine-tune OR LoRA)
+Reward model training (full OR LoRA)
+RLHF (full OR LoRA)
 ```
-2. Environment setup - with database model/configration/schema -> Load dataset -> create training dataset -> Creating a Model -> Defining a Rollout -> RULER
-
-3. documentations
