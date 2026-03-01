@@ -40,9 +40,11 @@
  Runs two RNNs in opposite directions:
   - Forward RNN: left → right
   - Backward RNN: right → left
+ 
  Characteristics
   - Uses both past and future context
   - Requires full sequence before processing
+ 
  Typical Use Cases
  - POS tagging
  - Named Entity Recognition
@@ -70,7 +72,7 @@ Model	| Long-Term Memory | Bidirectional | Deep Layers | Sequence-to-Sequence	| 
 |--------|--------|-------|------|------|------|
 | Vanilla RNN	| No	| No	| No	| No	| No| 
 | BiRNN |	No	| Yes	| No	| No	| No|
-| Multi-layer| RNN	| No	| No	|Yes	| No	|No |
+| Multi-layer RNN	| No	| No	|Yes	| No	|No |
 | LSTM	| Yes |	No	| Optional|	No	|No|
 | GRU	|Yes | 	No	| Optional |	No|	No|
 | Seq2Seq	| Yes (if LSTM/GRU)	| Optional |	Optional	| Yes	| No|
@@ -335,6 +337,38 @@ Add/Norm include: residual connection, Layer Norm / Batch Norm
   4. Long sequences: AliBi or RoPE
 ```
 
+# Q&A
+1. Suppose during training you observe that the training loss oscillates wildly and sometimes increases dramatically between steps.What is the most likely cause? What adjustment would you make? - The learning rate is likely too large. With a large step size, the gradient updates overshoot the minimum, causing the loss to increase or oscillate between steps. Reducing the learning rate would help stabilize training by allowing smaller updates that are less likely to diverge.
+
+2. Suppose you use beam search for text generation. In what type
+of task might this be not preferred compared to sampling-based
+methods? Give an example task and explain why. - Beam search may not be preferred in open-ended tasks such as story writing or dialogue generation. Because it maximizes sequence-level likelihood, it often produces generic or repetitive high-probability outputs. In open-ended tasks, many continuations are valid, and sampling allows greater diversity. In contrast, for constrained tasks like machine translation or summarization,where correct outputs are limited, beam search is more appropriate since likelihood better aligns with correctness.
+
+3. Why can applying normalization before a residual connectio (Pre-Norm) stabilizes training of deep transformers? - n very deep transformers, gradients can vanish or explode as they
+pass through many nonlinear layers. In Pre-Norm, normalization is
+applied before the transformation F (·), so the block becomes
+y = x + F (LN(x)) instead of post-Norm y = LN(x + F (x)).
+This keeps the residual (identity) path x unchanged, there is always
+a direct path for gradients to flow back through the identity
+connection, which helps prevent vanishing gradients even if F (·)
+causes gradients to vanish. (Layer normalization: Normalizes the outputs to be within a consistent range, preventing too much variance in scale of outputs)
+
+4. In post-training, why does maximizing likelihood with supervised fine-tuning (SFT) not necessarily maximize human preference? - Supervised fine-tuning maximizes token-level likelihood of the
+reference responses in the dataset. This objective rewards matching
+the exact tokens in demonstrations.
+However, many prompts have multiple valid responses, and human
+preference depends on sequence-level qualities such as helpfulness,
+harmlessness, and honesty. As a result, a response can have high
+likelihood under the training data but still be less preferred by
+humans for being unhelpful, unsafe, or dishonest (e.g., hallucinated)
+
+5. Dropout reduces overfitting by introducing stochastic noise during training. Dropout is only applied during training.
+
+6. Teacher Forcing: Feeds ground-truth tokens during training; Can cause exposure bias; Removing teacher forcing may increase instability
+
+7. Attention Quadratic Scaling: Attention computes: 𝑄𝐾^𝑇, If sequence length = L: Q is L × d and K is L × d. Multiplying gives L × L matrix. So memory for attention scores = O(L²)
+
+8. Attention computation cost depend on sequence length; # of heads depends on sequence length; Parameters do NOT depend on sequence length; Vocabulary embedding depends on vocab size, not sequence length; FFN computation depends on hidden size; Embedding matrix parameters = V × d, depend on Vocabulary size and dimensional space; Sequence length L Affects Compute quadratic in attention; Hidden size d Affects Compute, # Layers N Affects Compute; Sequence length has Quadratic Memory Impact; Batch size affect memory linearly
 
 # Sampling Method
 
