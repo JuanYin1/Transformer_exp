@@ -1,4 +1,5 @@
 # Mini-Agent System Architecture: Complete Flow Diagram
+repo: https://github.com/MiniMax-AI/Mini-Agent.
 
 ## System Overview Flowchart
 
