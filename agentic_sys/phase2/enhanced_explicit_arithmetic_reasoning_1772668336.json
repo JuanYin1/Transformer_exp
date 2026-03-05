@@ -1,0 +1,95 @@
+{
+  "test_info": {
+    "name": "explicit_arithmetic_reasoning",
+    "category": "reasoning",
+    "complexity": "simple",
+    "description": "Arithmetic with mandatory step-by-step breakdown",
+    "max_time_seconds": 30
+  },
+  "execution": {
+    "total_time": 6.040087938308716,
+    "success": true,
+    "error": null,
+    "output_length": 2220
+  },
+  "evaluation": {
+    "overall_score": 0.6000000000000001,
+    "pass_threshold": 0.7,
+    "correctness_score": 1.0,
+    "completeness_score": 0.5,
+    "reasoning_score": 0.4,
+    "efficiency_score": 1.0,
+    "execution_score": 1.0,
+    "passed": false,
+    "confidence": 0.7,
+    "reasoning": "Overall Score: 0.60 (FAIL)\n\nComponent Breakdown:\n\u2022 Correctness: 1.00 (weight: 0.3)\n\u2022 Completeness: 0.50 (weight: 0.2)\n\u2022 Reasoning Quality: 0.40 (weight: 0.5)\n\u2022 Efficiency: 1.00 (weight: 0.0)\n\u2022 Execution: 1.00 (weight: 0.0)\n\nStrengths: Strong factual correctness, Efficient execution time\nAreas for improvement: Weak reasoning demonstration\n\nConfidence: 0.70",
+    "failed_criteria": [
+      "completeness",
+      "reasoning_quality"
+    ],
+    "evidence": null
+  },
+  "performance_monitoring": {
+    "monitoring_duration": 5.932870149612427,
+    "sample_count": 30,
+    "avg_cpu_percent": 18.63666666666667,
+    "max_cpu_percent": 34.2,
+    "cpu_bottleneck_duration": 0.0,
+    "cpu_core_imbalance": 385.28426111111105,
+    "avg_memory_percent": 80.36000000000004,
+    "max_memory_percent": 81.3,
+    "memory_growth_rate": -14.266387577272237,
+    "swap_usage_detected": true,
+    "total_disk_read_mb": 23.03515625,
+    "total_disk_write_mb": 0.84765625,
+    "avg_disk_throughput_mbps": 4.025507367890089,
+    "disk_bottleneck_detected": false,
+    "total_network_mb": 0.14453125,
+    "avg_network_throughput_mbps": 0.024361101179576922,
+    "network_pattern": "idle",
+    "process_peak_memory_mb": 0.0,
+    "process_avg_cpu": 0.0,
+    "process_thread_growth": 0,
+    "primary_bottleneck": "memory",
+    "bottleneck_confidence": 0.8036000000000004,
+    "bottleneck_details": {
+      "cpu_analysis": {
+        "avg_usage": 18.63666666666667,
+        "peak_usage": 34.2,
+        "bottleneck_duration_percent": 0.0,
+        "core_imbalance": 385.28426111111105
+      },
+      "memory_analysis": {
+        "avg_usage": 80.36000000000004,
+        "peak_usage": 81.3,
+        "growth_rate_mb_per_sec": -14.266387577272237,
+        "swap_usage": true
+      },
+      "disk_analysis": {
+        "total_read_mb": 23.03515625,
+        "total_write_mb": 0.84765625,
+        "avg_throughput_mbps": 4.025507367890089,
+        "bottleneck_detected": false
+      },
+      "network_analysis": {
+        "total_mb": 0.14453125,
+        "avg_throughput_mbps": 0.024361101179576922,
+        "pattern": "idle"
+      },
+      "process_analysis": {
+        "peak_memory_mb": 0.0,
+        "avg_cpu_percent": 0.0,
+        "thread_growth": 0
+      }
+    }
+  },
+  "enhanced_analysis": {
+    "overall_success": false,
+    "confidence_score": 0.7,
+    "resource_bottleneck": "memory",
+    "bottleneck_confidence": 0.8036000000000004,
+    "llm_inference_pattern": "light",
+    "tool_usage_intensity": "intensive",
+    "reasoning_quality_category": "fair"
+  }
+}
