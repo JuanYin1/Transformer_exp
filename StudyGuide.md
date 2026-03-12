@@ -87,7 +87,7 @@ Model	| Long-Term Memory | Bidirectional | Deep Layers | Sequence-to-Sequence	| 
  3. BERT cannot generate text (at least not in an obvious way)
  4. Could put [MASK] at the end repeatedly, but this is slow and in practice lacks coherence E.g,: "The cat sat on the [MASK]" → "The cat sat on the mat"
  5. Masked language models are intended to be used primarily for "analysis" tasks (e.g., classification, question answering, etc.) rather than generation tasks
- 6. each token depends on all the other token, soKV cache do not work here, since KV cache works when the current calculation only depends on the previous layer's of K and V
+ 6. each token depends on all the other token, so KV cache do not work here, since KV cache works when the current calculation only depends on the previous layer's of K and V
 
  ### GPT-2
  - Uses Transformer decoder-only architecture
