@@ -50,6 +50,7 @@
 1. in-depth training: deeper exploration to the topic: add constrain, deepen reasoning make complicated input.
 2. in-breath training: using new instructions to raise the diversity
 3. Synthetic Data: used since human annotation is expensive, but they are heavey on the classification tasks, not on the side of reasoning, which means the question-answer pair could be too simple.
+4. vision instructuon tuning 
 
 
 
@@ -139,3 +140,40 @@ Synthetic data isn’t perfect:
 👉 Best practice: **mix synthetic + real data carefully**
 
 Think of synthetic data as: **“A way to manufacture exactly the training examples you wish you had.”**
+
+
+# RAG with Rapidfireai
+what rag contains and can config:
+1. Document Processing Layer
+    - document_loader: Loads files (DirectoryLoader, TextLoader, etc.)
+    - text_splitter: Chunks documents (RecursiveCharacterTextSplitter, etc.)
+    - metadata_extraction: Adds source tracking and context
+2. Embedding & Retrieval Layer
+    - embedding_cfg: Vector models (OpenAI, HuggingFace, etc.)
+    - vector_store_cfg: Storage backends (FAISS, PGVector, Pinecone)
+    - search_cfg: Retrieval strategies (similarity, MMR, etc.)
+3. Reranking Layer
+    - reranker_cfg: CrossEncoder models for relevance refinement
+    - reranking_strategy: Score fusion and filtering
+4. Generation Layer
+    - generator_config: LLM providers (OpenAI, vLLM, local models)
+    - prompt_manager: Template and context assembly
+5. Evaluation Framework
+    - compute_metrics_fn: Per-batch evaluation (F1, NDCG@5, MRR)
+    - accumulate_metrics_fn: Cross-batch aggregation
+
+  #### Multi-Configuration System
+
+  You correctly identified the combinatorial nature! RapidFire AI uses RFGridSearch to create configuration matrices:
+
+  #### Each component can have multiple options
+  ```python
+  config_set = {
+      "embeddings": [OpenAIEmbeddings, HuggingFaceEmbeddings],           # 2 options
+      "vector_stores": [FAISSConfig, PGVectorConfig],                    # 2 options  
+      "chunk_sizes": [256, 512],                                         # 2 options
+      "rerankers": [CrossEncoderReranker, NoReranker],                   # 2 options
+      "generators": [OpenAIGPT4, TritonAI],                             # 2 options
+      "search_strategies": ["similarity", "mmr"],                        # 2 options
+  }
+  ```
