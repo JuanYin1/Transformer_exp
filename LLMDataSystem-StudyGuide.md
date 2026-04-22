@@ -177,3 +177,42 @@ what rag contains and can config:
       "search_strategies": ["similarity", "mmr"],                        # 2 options
   }
   ```
+
+
+# Why training is not stable?
+#### The instability is likely due to:
+  1. No random seed for training splits - Each run creates different train/test splits
+  2. Learning rates still too high for some models
+  3. Insufficient epochs for convergence
+  4. Batch size too small for stable gradients
+#### Solution:
+1. Stable gradients: Larger batches + normalization + LR scheduling
+2. Using smaller learning rate and train on more epochs
+3. Add learning rate scheduler for stability, update lr for each epoch using ```schedular.step()```
+4. Adding Normolization increase stability 
+1. Fixed Random Seed
+
+  - Added torch.manual_seed(42) before train/test split
+  - Now you get consistent data splits between runs
+
+  2. Optimized Hyperparameters
+
+  - Spectrograms (Q2): 50 epochs, lr=0.0003
+  - Mel-spectrograms (Q3): 40 epochs, lr=0.0005
+  - CQT (Q4): 45 epochs, lr=0.0002
+  - Augmented MFCC (Q5): 35 epochs, lr=0.0005
+  - Added weight decay (1e-5) for regularization
+
+  3. Added Learning Rate Scheduler
+
+  - Reduces learning rate by 50% every 1/3 of training
+  - Helps model converge to stable solutions
+
+  4. Improved Batch Size
+
+  - Changed from 16 to 32 for more stable gradients
+
+  5. Feature Normalization
+
+  - Added normalization to spectrograms and CQT features
+  - Prevents gradient explosion/vanishing
