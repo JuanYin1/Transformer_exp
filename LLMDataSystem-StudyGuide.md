@@ -190,6 +190,9 @@ what rag contains and can config:
 2. Using smaller learning rate and train on more epochs
 3. Add learning rate scheduler for stability, update lr for each epoch using ```schedular.step()```
 4. Adding Normolization increase stability 
+
+example: 
+```
 1. Fixed Random Seed
 
   - Added torch.manual_seed(42) before train/test split
@@ -216,3 +219,4 @@ what rag contains and can config:
 
   - Added normalization to spectrograms and CQT features
   - Prevents gradient explosion/vanishing
+```
